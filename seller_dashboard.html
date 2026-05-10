@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Seller Dashboard – KisanMart</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<link rel="stylesheet" href="/static/seller.css"> 
+</head>
+<body>
+<aside class="sidebar">
+  <div class="sidebar-logo">🌾 <span>Agri</span>Market</div>
+  <a class="nav-item active" onclick="showTab('overview')"><i class="fas fa-chart-bar"></i> Overview</a>
+  <a class="nav-item" onclick="showTab('add-crop')"><i class="fas fa-plus-circle"></i> Add Crop</a>
+  <a class="nav-item" onclick="showTab('my-crops')"><i class="fas fa-seedling"></i> My Crops</a>
+  <a class="nav-item" onclick="showTab('orders')"><i class="fas fa-shopping-cart"></i> Orders</a>
+  <a class="nav-item" href="/"><i class="fas fa-home"></i> Back to Home</a>
+  <div class="sidebar-footer">
+    <div class="user-name">{{ session.name }}</div>
+    <div class="user-info">Seller Account</div>
+    <a href="/logout" class="nav-item danger" style="padding:10px 0;margin-top:10px"><i class="fas fa-sign-out-alt"></i> Logout</a>
+  </div>
+</aside>
+
+<main class="main">
+  <div class="topbar">
+    <div class="page-title">Seller Dashboard</div>
+    <button class="btn btn-green" onclick="showTab('add-crop')"><i class="fas fa-plus"></i> List New Crop</button>
+  </div>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}{% for cat, msg in messages %}<div class="flash-msg flash-{{ cat }}">{{ msg }}</div>{% endfor %}{% endif %}
+  {% endwith %}
+
+  <!-- Overview -->
+  <div id="tab-overview" class="tab-content active">
+    <div class="stats-grid">
+      <div class="stat-card green">
+        <div class="stat-icon green"><i class="fas fa-seedling" style="color:var(--green)"></i></div>
+        <div class="stat-val">{{ stats.total_crops }}</div>
+        <div class="stat-label">Active Listings</div>
+      </div>
+      <div class="stat-card gold">
+        <div class="stat-icon gold"><i class="fas fa-shopping-cart" style="color:var(--gold)"></i></div>
+        <div class="stat-val">{{ stats.total_orders }}</div>
+        <div class="stat-label">Total Orders</div>
+      </div>
+      <div class="stat-card blue">
+        <div class="stat-icon blue"><i class="fas fa-rupee-sign" style="color:#1a73e8"></i></div>
+        <div class="stat-val">₹{{ "%.0f"|format(stats.revenue) }}</div>
+        <div class="stat-label">Revenue Earned</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><div class="card-title">Recent Orders</div></div>
+      <table>
+        <tr><th>Crop</th><th>Buyer</th><th>Qty</th><th>Total</th><th>Status</th><th>Actions</th></tr>
+        {% for o in orders[:10] %}
+        <tr>
+          <td><strong>{{ o.crop_name }}</strong></td>
+          <td>{{ o.buyer_name }}<br><small style="color:#888">{{ o.buyer_phone }}</small></td>
+          <td>{{ o.quantity }} {{ o.unit }}</td>
+          <td><strong>₹{{ "%.2f"|format(o.total_price) }}</strong></td>
+          <td><span class="badge badge-{{ o.status }}">{{ o.status.title() }}</span></td>
+          <td>
+            {% if o.status == 'pending' %}
+            <a href="/seller/order/update/{{ o.id }}/confirmed" class="btn btn-blue btn-sm">Confirm</a>
+            <a href="/seller/order/update/{{ o.id }}/cancelled" class="btn btn-red btn-sm">Cancel</a>
+            {% endif %}
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6" style="text-align:center;padding:30px;color:#aaa">No orders yet</td></tr>
+        {% endfor %}
+      </table>
+    </div>
+  </div>
+
+  <!-- Add Crop -->
+  <div id="tab-add-crop" class="tab-content">
+    <div class="card">
+      <div class="card-header"><div class="card-title">List a New Crop</div></div>
+      <form method="POST" action="/seller/crop/add">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Crop Name</label>
+            <input type="text" name="name" placeholder="e.g. Basmati Rice" required>
+          </div>
+          <div class="form-group">
+            <label>Category</label>
+            <select name="category" required>
+              <option value="">Select category</option>
+              <option>Grains</option><option>Vegetables</option><option>Fruits</option>
+              <option>Pulses</option><option>Spices</option><option>Oilseeds</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Price (₹ per unit)</label>
+            <input type="number" name="price" step="0.01" min="0" placeholder="0.00" required>
+          </div>
+          <div class="form-group">
+            <label>Quantity Available</label>
+            <input type="number" name="quantity" step="0.1" min="0" placeholder="0" required>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Unit of Measurement</label>
+          <select name="unit" required>
+            <option value="">Select unit</option>
+            <option>kg</option><option>quintal</option><option>ton</option>
+            <option>dozen</option><option>piece</option><option>litre</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Description (Optional)</label>
+          <textarea name="description" rows="3" placeholder="Quality, variety, harvest details..."></textarea>
+        </div>
+        <button type="submit" class="btn btn-green"><i class="fas fa-plus"></i> List Crop</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- My Crops -->
+  <div id="tab-my-crops" class="tab-content">
+    <div class="card">
+      <div class="card-header"><div class="card-title">My Listings ({{ crops|length }})</div></div>
+      <table>
+        <tr><th>Crop</th><th>Category</th><th>Price</th><th>Quantity</th><th>Status</th><th>Actions</th></tr>
+        {% for c in crops %}
+        <tr>
+          <td><strong>{{ c.name }}</strong></td>
+          <td>{{ c.category }}</td>
+          <td>₹{{ "%.2f"|format(c.price) }}/{{ c.unit }}</td>
+          <td>{{ c.quantity }} {{ c.unit }}</td>
+          <td><span class="badge {{ 'badge-available' if c.is_available else 'badge-unavailable' }}">
+            {{ 'Available' if c.is_available else 'Removed' }}</span></td>
+          <td>
+            {% if c.is_available %}
+            <a href="/seller/crop/delete/{{ c.id }}" class="btn btn-red btn-sm" onclick="return confirm('Remove this listing?')">Remove</a>
+            {% endif %}
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6" style="text-align:center;padding:30px;color:#aaa">No crops listed yet</td></tr>
+        {% endfor %}
+      </table>
+    </div>
+  </div>
+
+  <!-- Orders -->
+  <div id="tab-orders" class="tab-content">
+    <div class="card">
+      <div class="card-header"><div class="card-title">All Orders</div></div>
+      <table>
+        <tr><th>Crop</th><th>Buyer</th><th>Contact</th><th>Qty</th><th>Total</th><th>Date</th><th>Status</th><th>Actions</th></tr>
+        {% for o in orders %}
+        <tr>
+          <td><strong>{{ o.crop_name }}</strong></td>
+          <td>{{ o.buyer_name }}</td>
+          <td>{{ o.buyer_phone }}</td>
+          <td>{{ o.quantity }} {{ o.unit }}</td>
+          <td>₹{{ "%.2f"|format(o.total_price) }}</td>
+          <td style="color:#888;font-size:.8rem">{{ o.created_at[:10] }}</td>
+          <td><span class="badge badge-{{ o.status }}">{{ o.status.title() }}</span></td>
+          <td>
+            {% if o.status == 'pending' %}
+            <a href="/seller/order/update/{{ o.id }}/confirmed" class="btn btn-blue btn-sm">✓ Confirm</a>
+            <a href="/seller/order/update/{{ o.id }}/cancelled" class="btn btn-red btn-sm">✗ Cancel</a>
+            {% endif %}
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="8" style="text-align:center;padding:30px;color:#aaa">No orders yet</td></tr>
+        {% endfor %}
+      </table>
+    </div>
+  </div>
+</main>
+
+</body><script src="/static/seller.js"></script>  
+</html>

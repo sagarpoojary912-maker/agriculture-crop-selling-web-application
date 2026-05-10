@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Dashboard – KisanMart</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<link rel="stylesheet" href="/static/admin.css">  
+
+</head>
+<body>
+<aside class="sidebar">
+  <div class="sidebar-logo">🌾 <span>Agri</span>Market <span class="admin-badge">Admin</span></div>
+  <div class="nav-section">Overview</div>
+  <a class="nav-item active" onclick="showTab('overview')"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+  <div class="nav-section">Management</div>
+  <a class="nav-item" onclick="showTab('users')"><i class="fas fa-users"></i> Users ({{ stats.users }})</a>
+  <a class="nav-item" onclick="showTab('crops')"><i class="fas fa-seedling"></i> Crops ({{ stats.crops }})</a>
+  <a class="nav-item" onclick="showTab('orders')"><i class="fas fa-shopping-cart"></i> Orders ({{ stats.orders }})</a>
+  <div class="nav-section">Site</div>
+  <a class="nav-item" href="/"><i class="fas fa-globe"></i> View Site</a>
+  <div class="sidebar-footer">
+    <div class="user-name">{{ session.name }}</div>
+    <div class="user-role">⚡ Administrator</div>
+    <a href="/logout" class="nav-item" style="padding:10px 0;margin-top:10px;color:rgba(255,120,120,.8)"><i class="fas fa-sign-out-alt"></i> Logout</a>
+  </div>
+</aside>
+
+<main class="main">
+  <div class="topbar">
+    <div>
+      <div class="page-title">Admin Dashboard</div>
+      <div style="color:#888;font-size:.85rem">Platform Overview & Management</div>
+    </div>
+  </div>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}{% for cat, msg in messages %}<div class="flash-msg flash-{{ cat }}">{{ msg }}</div>{% endfor %}{% endif %}
+  {% endwith %}
+
+  <!-- Overview -->
+  <div id="tab-overview" class="tab-content active">
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-icon">👥</div><div class="stat-val">{{ stats.users }}</div><div class="stat-label">Total Users</div></div>
+      <div class="stat-card"><div class="stat-icon">🚜</div><div class="stat-val">{{ stats.sellers }}</div><div class="stat-label">Sellers</div></div>
+      <div class="stat-card"><div class="stat-icon">🛒</div><div class="stat-val">{{ stats.buyers }}</div><div class="stat-label">Buyers</div></div>
+      <div class="stat-card"><div class="stat-icon">🌾</div><div class="stat-val">{{ stats.crops }}</div><div class="stat-label">Active Crops</div></div>
+      <div class="stat-card"><div class="stat-icon">📦</div><div class="stat-val">{{ stats.orders }}</div><div class="stat-label">Total Orders</div></div>
+      <div class="stat-card"><div class="stat-icon">💰</div><div class="stat-val">₹{{ "%.0f"|format(stats.revenue) }}</div><div class="stat-label">Revenue</div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><div class="card-title">Recent Orders</div></div>
+      <table>
+        <tr><th>Crop</th><th>Buyer</th><th>Seller</th><th>Total</th><th>Date</th><th>Status</th></tr>
+        {% for o in orders[:10] %}
+        <tr>
+          <td><strong>{{ o.crop_name }}</strong></td>
+          <td>{{ o.buyer_name }}</td>
+          <td>{{ o.seller_name }}</td>
+          <td>₹{{ "%.2f"|format(o.total_price) }}</td>
+          <td style="color:#888;font-size:.8rem">{{ o.created_at[:10] }}</td>
+          <td><span class="badge badge-{{ o.status }}">{{ o.status.title() }}</span></td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6" style="text-align:center;padding:20px;color:#aaa">No orders yet</td></tr>
+        {% endfor %}
+      </table>
+    </div>
+  </div>
+
+  <!-- Users -->
+  <div id="tab-users" class="tab-content">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">All Users ({{ users|length }})</div>
+        <input type="text" class="search-box" placeholder="🔍 Search users..." oninput="filterTable(this,'usersTable')">
+      </div>
+      <table id="usersTable">
+        <tr><th>Name</th><th>Email</th><th>Role</th><th>Phone</th><th>Location</th><th>Joined</th><th>Status</th><th>Action</th></tr>
+        {% for u in users %}
+        <tr>
+          <td><strong>{{ u.name }}</strong></td>
+          <td style="color:#888">{{ u.email }}</td>
+          <td><span class="badge badge-{{ u.role }}">{{ u.role.title() }}</span></td>
+          <td>{{ u.phone or '—' }}</td>
+          <td>{{ u.location or '—' }}</td>
+          <td style="color:#888;font-size:.8rem">{{ u.created_at[:10] }}</td>
+          <td><span class="badge {{ 'badge-active' if u.is_active else 'badge-inactive' }}">{{ 'Active' if u.is_active else 'Blocked' }}</span></td>
+          <td>
+            <a href="/admin/user/toggle/{{ u.id }}" class="btn {{ 'btn-red btn-toggle-off' if u.is_active else 'btn-green btn-toggle-on' }}"
+               onclick="return confirm('{{ 'Block' if u.is_active else 'Unblock' }} this user?')">
+              {{ '🚫 Block' if u.is_active else '✅ Unblock' }}
+            </a>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="8" style="text-align:center;padding:20px;color:#aaa">No users registered</td></tr>
+        {% endfor %}
+      </table>
+    </div>
+  </div>
+
+  <!-- Crops -->
+  <div id="tab-crops" class="tab-content">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">All Crops ({{ crops|length }})</div>
+        <input type="text" class="search-box" placeholder="🔍 Search crops..." oninput="filterTable(this,'cropsTable')">
+      </div>
+      <table id="cropsTable">
+        <tr><th>Crop</th><th>Seller</th><th>Category</th><th>Price</th><th>Qty</th><th>Status</th><th>Listed</th><th>Action</th></tr>
+        {% for c in crops %}
+        <tr>
+          <td><strong>{{ c.name }}</strong></td>
+          <td>{{ c.seller_name }}</td>
+          <td>{{ c.category }}</td>
+          <td>₹{{ "%.2f"|format(c.price) }}/{{ c.unit }}</td>
+          <td>{{ c.quantity }} {{ c.unit }}</td>
+          <td><span class="badge {{ 'badge-active' if c.is_available else 'badge-inactive' }}">{{ 'Available' if c.is_available else 'Removed' }}</span></td>
+          <td style="color:#888;font-size:.8rem">{{ c.created_at[:10] }}</td>
+          <td>
+            {% if c.is_available %}
+            <a href="/admin/crop/remove/{{ c.id }}" class="btn btn-red" onclick="return confirm('Remove this crop?')">Remove</a>
+            {% endif %}
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="8" style="text-align:center;padding:20px;color:#aaa">No crops listed</td></tr>
+        {% endfor %}
+      </table>
+    </div>
+  </div>
+
+  <!-- Orders -->
+  <div id="tab-orders" class="tab-content">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">All Orders ({{ orders|length }})</div>
+        <input type="text" class="search-box" placeholder="🔍 Search orders..." oninput="filterTable(this,'ordersTable')">
+      </div>
+      <table id="ordersTable">
+        <tr><th>#</th><th>Crop</th><th>Buyer</th><th>Seller</th><th>Qty</th><th>Total</th><th>Date</th><th>Status</th></tr>
+        {% for o in orders %}
+        <tr>
+          <td style="color:#aaa">#{{ o.id }}</td>
+          <td><strong>{{ o.crop_name }}</strong></td>
+          <td>{{ o.buyer_name }}</td>
+          <td>{{ o.seller_name }}</td>
+          <td>{{ o.quantity }}</td>
+          <td>₹{{ "%.2f"|format(o.total_price) }}</td>
+          <td style="color:#888;font-size:.8rem">{{ o.created_at[:10] }}</td>
+          <td><span class="badge badge-{{ o.status }}">{{ o.status.title() }}</span></td>
+        </tr>
+        {% else %}
+        <tr><td colspan="8" style="text-align:center;padding:20px;color:#aaa">No orders yet</td></tr>
+        {% endfor %}
+      </table>
+    </div>
+  </div>
+</main>
+
+
+</body><script src="/static/admin.js"></script>
+</html>

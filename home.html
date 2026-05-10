@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KisanMart – Farm Fresh, Direct to You</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<link rel="stylesheet" href="/static/home.css"> 
+</head>
+<body>
+
+<!-- Loader -->
+<div id="loader"><div class="loader-leaf"></div></div>
+
+<!-- Flash Messages -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}
+<div class="flash">
+  {% for cat, msg in messages %}
+  <div class="alert alert-{{ cat }}"><i class="fas fa-check-circle"></i> {{ msg }}</div>
+  {% endfor %}
+</div>
+{% endif %}
+{% endwith %}
+
+<!-- Navbar -->
+<nav id="navbar">
+  <a href="/" class="logo">🌾 <span>Kisan</span>Mart</a>
+  <ul class="nav-links">
+    <li><a href="#crops">Browse Crops</a></li>
+    <li><a href="#categories">Categories</a></li>
+    <li><a href="#how">How It Works</a></li>
+    {% if session.role %}
+      <li><a href="{{ url_for(session.role + '_dashboard') }}" class="nav-btn">My Dashboard</a></li>
+      <li><a href="/logout" class="nav-btn outline">Logout</a></li>
+    {% else %}
+      <li><a href="/login" class="nav-btn outline">Login</a></li>
+      <li><a href="/register" class="nav-btn">Get Started</a></li>
+    {% endif %}
+  </ul>
+</nav>
+
+<!-- Hero -->
+<section id="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-pattern"></div>
+  <div class="particles" id="particles"></div>
+  <div class="hero-content">
+    <div class="hero-badge"><i class="fas fa-seedling"></i> India's Premier KisanMart</div>
+    <h1>Farm Fresh Crops,<br><em>Direct From</em><br>The Soil</h1>
+    <p>Connect farmers to buyers. No middlemen. Better prices. Fresher produce. Join thousands of farmers and buyers across India.</p>
+    <div class="hero-btns">
+      <a href="#crops" class="btn btn-primary"><i class="fas fa-store"></i> Browse Crops</a>
+      <a href="/register" class="btn btn-outline"><i class="fas fa-tractor"></i> Sell Your Crops</a>
+    </div>
+  </div>
+  <div class="hero-visual">
+    <div class="crop-circle">
+      <div class="orbit orbit-1"><div class="orbit-dot"></div></div>
+      <div class="orbit orbit-2"><div class="orbit-dot"></div></div>
+      <div class="hero-card-float">
+        <div class="crop-emoji">🌾</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Stats -->
+<div class="stats-bar">
+  <div class="stat-item"><div class="stat-num counter" data-target="5000">0</div><div class="stat-label">Farmers Registered</div></div>
+  <div class="stat-item"><div class="stat-num counter" data-target="12000">0</div><div class="stat-label">Buyers Active</div></div>
+  <div class="stat-item"><div class="stat-num counter" data-target="85000">0</div><div class="stat-label">Orders Fulfilled</div></div>
+  <div class="stat-item"><div class="stat-num counter" data-target="32">0</div><div class="stat-label">States Covered</div></div>
+</div>
+
+<!-- Categories -->
+<section class="section" id="categories">
+  <div class="section-header reveal">
+    <div class="section-tag">Shop By Type</div>
+    <h2 class="section-title">Browse Categories</h2>
+  </div>
+  <div class="categories-grid reveal">
+    <a href="#crops" class="cat-card" onclick="filterCategory('Grains')">
+      <span class="cat-icon">🌾</span><div class="cat-label">Grains</div>
+    </a>
+    <a href="#crops" class="cat-card" onclick="filterCategory('Vegetables')">
+      <span class="cat-icon">🥦</span><div class="cat-label">Vegetables</div>
+    </a>
+    <a href="#crops" class="cat-card" onclick="filterCategory('Fruits')">
+      <span class="cat-icon">🍎</span><div class="cat-label">Fruits</div>
+    </a>
+    <a href="#crops" class="cat-card" onclick="filterCategory('Pulses')">
+      <span class="cat-icon">🫘</span><div class="cat-label">Pulses</div>
+    </a>
+    <a href="#crops" class="cat-card" onclick="filterCategory('Spices')">
+      <span class="cat-icon">🌶️</span><div class="cat-label">Spices</div>
+    </a>
+    <a href="#crops" class="cat-card" onclick="filterCategory('Oilseeds')">
+      <span class="cat-icon">🌻</span><div class="cat-label">Oilseeds</div>
+    </a>
+    <a href="#crops" class="cat-card" onclick="filterCategory('')">
+      <span class="cat-icon">🛒</span><div class="cat-label">All Crops</div>
+    </a>
+  </div>
+</section>
+
+<!-- Crops Section -->
+<section class="section crops-section" id="crops">
+  <div class="section-header reveal">
+    <div class="section-tag">Fresh Listings</div>
+    <h2 class="section-title">Available Crops</h2>
+  </div>
+  <div class="search-bar reveal">
+    <input type="text" class="search-input" id="searchInput" placeholder="🔍  Search for crops...">
+    <select class="search-input" id="categoryFilter" style="max-width:200px">
+      <option value="">All Categories</option>
+      <option>Grains</option><option>Vegetables</option><option>Fruits</option>
+      <option>Pulses</option><option>Spices</option><option>Oilseeds</option>
+    </select>
+    <button class="search-btn" onclick="searchCrops()"><i class="fas fa-search"></i> Search</button>
+  </div>
+  <div class="crops-grid" id="cropsGrid">
+    {% for crop in crops %}
+    <div class="crop-card reveal">
+      <div class="crop-img">
+        {{ '🌾' if crop.category=='Grains' else '🥦' if crop.category=='Vegetables' else '🍎' if crop.category=='Fruits' else '🫘' if crop.category=='Pulses' else '🌶️' if crop.category=='Spices' else '🌻' }}
+        <div class="crop-badge">{{ crop.category }}</div>
+      </div>
+      <div class="crop-body">
+        <div class="crop-name">{{ crop.name }}</div>
+        <div class="crop-seller"><i class="fas fa-user-circle"></i> {{ crop.seller_name }} · {{ crop.seller_loc }}</div>
+        <div class="crop-meta">
+          <div class="crop-price">₹{{ "%.2f"|format(crop.price) }}/{{ crop.unit }}</div>
+          <div class="crop-qty">{{ crop.quantity }} {{ crop.unit }} avail.</div>
+        </div>
+        {% if session.role == 'buyer' %}
+        <button class="order-btn" onclick="openOrder({{ crop.id }},'{{ crop.name }}',{{ crop.price }},'{{ crop.unit }}')">
+          <i class="fas fa-cart-plus"></i> Order Now
+        </button>
+        {% elif not session.role %}
+        <a href="/login" class="order-btn" style="display:block;text-align:center;text-decoration:none;color:#fff;padding:12px;border-radius:12px">Login to Order</a>
+        {% else %}
+        <div style="text-align:center;color:var(--gray);font-size:.85rem;padding:10px">Logged in as {{ session.role }}</div>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+    {% if not crops %}
+    <div style="grid-column:1/-1;text-align:center;padding:60px;color:var(--gray)">
+      <div style="font-size:4rem;margin-bottom:16px">🌱</div>
+      <div style="font-size:1.1rem">No crops listed yet. <a href="/register" style="color:var(--green)">Be the first seller!</a></div>
+    </div>
+    {% endif %}
+  </div>
+</section>
+
+<!-- How it Works -->
+<section class="section how-section" id="how">
+  <div class="section-header reveal">
+    <div class="section-tag">Simple Process</div>
+    <h2 class="section-title">How KisanMart Works</h2>
+  </div>
+  <div class="steps-grid">
+    <div class="step-card reveal">
+      <div class="step-num">01</div>
+      <div class="step-icon">📝</div>
+      <div class="step-title">Register Your Account</div>
+      <div class="step-desc">Sign up as a farmer (seller) or buyer in minutes. Verify your identity and start trading.</div>
+    </div>
+    <div class="step-card reveal">
+      <div class="step-num">02</div>
+      <div class="step-icon">🌱</div>
+      <div class="step-title">List or Browse Crops</div>
+      <div class="step-desc">Sellers list their produce with prices. Buyers browse fresh listings by category and location.</div>
+    </div>
+    <div class="step-card reveal">
+      <div class="step-num">03</div>
+      <div class="step-icon">🤝</div>
+      <div class="step-title">Place & Confirm Orders</div>
+      <div class="step-desc">Buyers place orders. Sellers confirm and coordinate delivery directly with buyers.</div>
+    </div>
+    <div class="step-card reveal">
+      <div class="step-num">04</div>
+      <div class="step-icon">💰</div>
+      <div class="step-title">Grow Your Business</div>
+      <div class="step-desc">No middlemen. Better prices for farmers. Fresher produce for buyers. Everyone wins.</div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta-section">
+  <h2 class="reveal">Ready to Transform<br>Agriculture?</h2>
+  <p class="reveal">Join thousands of farmers and buyers building a better food supply chain together.</p>
+  <div class="cta-btns reveal">
+    <a href="/register?role=seller" class="btn btn-white"><i class="fas fa-tractor"></i> Start Selling</a>
+    <a href="/register?role=buyer" class="btn btn-outline" style="border-color:rgba(255,255,255,.5);color:#fff"><i class="fas fa-shopping-basket"></i> Start Buying</a>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer>
+  <div class="footer-grid">
+    <div class="footer-brand">
+      <a href="/" class="logo">🌾 <span>Kisan</span>Mart</a>
+      <p class="footer-desc">Connecting India's farmers to buyers. Fresh. Fair. Direct.</p>
+    </div>
+    <div class="footer-col">
+      <h4>Quick Links</h4>
+      <ul>
+        <li><a href="#crops">Browse Crops</a></li>
+        <li><a href="/register">Register</a></li>
+        <li><a href="/login">Login</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>For Farmers</h4>
+      <ul>
+        <li><a href="/register">Sell Crops</a></li>
+        <li><a href="/seller">Dashboard</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>For Buyers</h4>
+      <ul>
+        <li><a href="#crops">Browse</a></li>
+        <li><a href="/buyer">My Orders</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <span>© 2024 KisanMart. All rights reserved.</span>
+    <span>Made with 💚 for Indian Farmers</span>
+  </div>
+</footer>
+
+<!-- Order Modal -->
+<div class="modal" id="orderModal">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <h3>🛒 Place Order</h3>
+    <form method="POST" action="/buyer/order">
+      <input type="hidden" name="crop_id" id="modalCropId">
+      <div style="background:#f0f9f3;padding:16px;border-radius:12px;margin-bottom:20px">
+        <div style="font-weight:700;font-size:1.1rem" id="modalCropName"></div>
+        <div style="color:var(--gray);font-size:.9rem" id="modalCropPrice"></div>
+      </div>
+      <div class="form-group">
+        <label>Quantity</label>
+        <input type="number" name="quantity" id="modalQty" min="1" step="0.1" required placeholder="Enter quantity" oninput="calcTotal()">
+      </div>
+      <div style="background:#e8f5e9;padding:14px;border-radius:12px;margin-bottom:20px;font-weight:700;color:var(--green)" id="totalDisplay">Total: ₹0.00</div>
+      <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center">Confirm Order</button>
+    </form>
+  </div>
+</div>
+
+
+</body><script src="/static/home.js"></script>
+</html>
